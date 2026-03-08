@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { InferRequestType, InferResponseType } from "hono";
+import { toast } from "sonner";
 
 import { client } from "@/lib/rpc";
 
@@ -14,7 +15,17 @@ export const useRegister = () => {
     >({
         mutationFn: async ({json}) => {
             const response = await client.api.auth.register["$post"]({ json });
+
+            if(!response.ok){
+                throw new Error("Registration failed")
+            }
             return await response.json();
+        },
+        onSuccess: () => {
+            toast.success("Account created successfully");
+        },
+        onError: () => {
+            toast.error("Registration failed");
         }
     })
 

@@ -1,6 +1,7 @@
 import { client } from "@/lib/rpc"
 import { useQuery } from "@tanstack/react-query"
-
+import { toast } from "sonner"
+import { useEffect } from "react"
 
 export const useCurrent = () => {
     const query = useQuery({
@@ -17,6 +18,12 @@ export const useCurrent = () => {
             return data;
         }
     })
+
+    useEffect(() => {
+        if (query.isError) {
+            toast.error("Failed to fetch current user");
+        }
+    }, [query.isError]);
 
     return query;
 }

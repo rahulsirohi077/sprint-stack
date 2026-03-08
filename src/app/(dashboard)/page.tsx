@@ -10,7 +10,6 @@ export default async function Home() {
 
   return (
     <div className="">
-      <UserButton/>
       This is a Home Page
       <div className="bg-neutral-500 p-4 h-full">
 
