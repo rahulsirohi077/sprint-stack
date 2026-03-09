@@ -1,0 +1,57 @@
+"use server";
+
+import { cookies } from "next/headers";
+import { Client, Query, Account, TablesDB, Models } from "node-appwrite";
+import { AUTH_COOKIE } from "@/features/auth/constants";
+import { DATABASE_ID, MEMBERS_ID, WORKSPACE_ID } from "@/config";
+
+type WorkspaceRow = Models.DefaultRow & {
+    name: string;
+    userId: string;
+    imageUrl?: string;
+    inviteCode: string;
+};
+
+type WorkspaceList = Models.RowList<WorkspaceRow>;
+
+export const getWorkspaces = async (): Promise<WorkspaceList | null> => {
+    try {
+        const client =  new Client()
+                .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+                .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT!)
+        
+        const session = (await cookies()).get(AUTH_COOKIE);
+        
+        if(!session) return  { rows: [], total: 0 } as WorkspaceList;
+        
+        client.setSession(session.value);
+        const databases = new TablesDB(client);
+        const account = new Account(client);
+        const user = await account.get();
+
+       const members = await databases.listRows({
+            databaseId: DATABASE_ID,
+            tableId: MEMBERS_ID,
+            queries: [Query.equal("userId", user.$id)]
+        })
+
+        if (members.total === 0) {
+            return  { rows: [], total: 0 } as WorkspaceList;
+        }
+
+        const workspaceId = members.rows.map((member)=> member.workspaceId);
+
+        const workspaces = await databases.listRows<WorkspaceRow>({
+            databaseId: DATABASE_ID,
+            tableId: WORKSPACE_ID,
+            queries:[
+                Query.orderDesc("$createdAt"),
+                Query.contains("$id", workspaceId)
+            ]
+        })
+
+        return workspaces;
+    } catch (error) {
+        return { rows: [], total: 0 } as WorkspaceList;
+    }
+};
