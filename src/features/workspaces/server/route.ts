@@ -6,6 +6,16 @@ import { sessionMiddleware } from '@/lib/session-middleware';
 import { DATABASE_ID, IMAGES_BUCKET_ID, WORKSPACE_ID } from '@/config';
 
 const app = new Hono()
+    .get("/", sessionMiddleware, async (c) => {
+        const databases = c.get("tablesDB");
+
+        const workspaces = await databases.listRows({
+            databaseId: DATABASE_ID,
+            tableId: WORKSPACE_ID
+        })
+
+        return c.json({data: workspaces},200);
+    })
     .post('/', zValidator('form', createWorkspaceSchema), sessionMiddleware, async (c) => {
         const tablesDB = c.get('tablesDB');
         const storage = c.get("storage");
@@ -21,7 +31,7 @@ const app = new Hono()
                 fileId: ID.unique(),
                 file: image
             })
-
+            
             const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
             const project = process.env.NEXT_PUBLIC_APPWRITE_PROJECT!;
             uploadedImageUrl = `${endpoint}/storage/buckets/${IMAGES_BUCKET_ID}/files/${file.$id}/view?project=${project}`;
