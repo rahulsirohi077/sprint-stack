@@ -1,10 +1,12 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { Account, Client } from "node-appwrite";
+import { Account, Client, Models } from "node-appwrite";
 import { AUTH_COOKIE } from "./constants";
 
-export const getCurrent = async () => {
+type CurrentUser = Models.User<Models.Preferences>;
+
+export const getCurrent = async (): Promise<CurrentUser | null> => {
     try {
         const client =  new Client()
                 .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
@@ -17,7 +19,7 @@ export const getCurrent = async () => {
         const account = new Account(client);
 
         return await account.get();
-    } catch (error) {
+    } catch {
         return null
     }
 }

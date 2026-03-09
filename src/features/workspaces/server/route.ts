@@ -1,7 +1,7 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
-import { ID, Query } from 'node-appwrite';
-import { createWorkspaceSchema } from '../schemas';
+import { ID, Models, Query } from 'node-appwrite';
+import { createWorkspaceSchema, MemberRow, WorkspaceRow } from '../schemas';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { DATABASE_ID, IMAGES_BUCKET_ID, MEMBERS_ID, WORKSPACE_ID } from '@/config';
 import { MemberRole } from '@/features/members/type';
@@ -12,7 +12,7 @@ const app = new Hono()
         const user = c.get('user')
         const databases = c.get("tablesDB");
 
-        const members = await databases.listRows({
+        const members = await databases.listRows<MemberRow>({
             databaseId: DATABASE_ID,
             tableId: MEMBERS_ID,
             queries: [Query.equal("userId", user.$id)]
@@ -24,7 +24,7 @@ const app = new Hono()
 
         const workspaceId = members.rows.map((member)=> member.workspaceId);
 
-        const workspaces = await databases.listRows({
+        const workspaces = await databases.listRows<WorkspaceRow>({
             databaseId: DATABASE_ID,
             tableId: WORKSPACE_ID,
             queries:[
@@ -56,7 +56,7 @@ const app = new Hono()
             uploadedImageUrl = `${endpoint}/storage/buckets/${IMAGES_BUCKET_ID}/files/${file.$id}/view?project=${project}`;
         }
 
-        const workspace = await tablesDB.createRow({
+        const workspace = await tablesDB.createRow<WorkspaceRow>({
             databaseId: DATABASE_ID,
             tableId: WORKSPACE_ID,
             rowId: ID.unique(),
@@ -78,7 +78,7 @@ const app = new Hono()
                 role: MemberRole.ADMIN
             }
         });
-        return c.json({ data: workspace }, 201);
+        return c.json({ data: workspace}, 201);
     });
 
 export default app;
