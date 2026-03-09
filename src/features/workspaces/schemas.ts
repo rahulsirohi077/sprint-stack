@@ -1,4 +1,6 @@
+import { Models } from "node-appwrite";
 import z from "zod";
+import { MemberRole } from "../members/type";
 
 
 export const createWorkspaceSchema = z.object({
@@ -10,3 +12,19 @@ export const createWorkspaceSchema = z.object({
   .optional(),
 });
 
+export type WorkspaceRow = Models.DefaultRow & {
+    name: string;
+    userId: string;
+    imageUrl?: string;
+    inviteCode: string;
+};
+
+export type WorkspaceList = Models.RowList<WorkspaceRow>;
+
+export type MemberRow = Models.DefaultRow & {
+  userId: string;
+  workspaceId: string;
+  role: MemberRole;
+}
+
+export type MembersList = Models.RowList<MemberRow>

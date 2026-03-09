@@ -1,18 +1,10 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { Client, Query, Account, TablesDB, Models } from "node-appwrite";
-import { AUTH_COOKIE } from "@/features/auth/constants";
 import { DATABASE_ID, MEMBERS_ID, WORKSPACE_ID } from "@/config";
-
-type WorkspaceRow = Models.DefaultRow & {
-    name: string;
-    userId: string;
-    imageUrl?: string;
-    inviteCode: string;
-};
-
-type WorkspaceList = Models.RowList<WorkspaceRow>;
+import { AUTH_COOKIE } from "@/features/auth/constants";
+import { cookies } from "next/headers";
+import { Account, Client, Query, TablesDB } from "node-appwrite";
+import { WorkspaceList, WorkspaceRow } from "./schemas";
 
 export const getWorkspaces = async (): Promise<WorkspaceList | null> => {
     try {

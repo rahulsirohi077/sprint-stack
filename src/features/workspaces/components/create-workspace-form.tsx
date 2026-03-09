@@ -13,12 +13,14 @@ import { useRef } from "react";
 import { Divide, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
 
 interface CreateWorkspaceFormProps {
     onCancel?: () => void;
 }
 
 export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
+    const router = useRouter();
     const { mutate, isPending } = useCreateWorkspace();
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -37,9 +39,9 @@ export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
         };
 
         mutate({ form: finalValues },{
-            onSuccess: () => {
+            onSuccess: ({data}) => {
                 form.reset();
-                // TODO: Redirect to new workspace
+                router.push(`/workspaces/${data.$id}`);
             }
         })
     }
@@ -61,10 +63,10 @@ export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
             <div className="px-7">
                 <DottedSeparator />
             </div>
-            <CardContent className="p-7">
+            <CardContent>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div>
+                        <div className="space-y-4">
                             <FormField
                                 control={form.control}
                                 name="name"
