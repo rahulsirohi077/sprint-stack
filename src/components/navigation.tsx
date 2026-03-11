@@ -36,15 +36,18 @@ const routes = [
 
 const Navigation = () => {
     const pathname = usePathname();
+    const workspaceId = usePathname();
+
 
     return (
         <ul className="flex flex-col gap-y-1">
             {routes.map((route) => {
-                const isActive = pathname === route.href;
+                const fullHref = `/workspaces/${workspaceId}${route.href}`
+                const isActive = pathname === fullHref;
                 const Icon = isActive ? route.activeIcon : route.icon;
 
                 return (
-                    <li key={route.href}>
+                    <li key={fullHref}>
                         <Link
                             href={route.href}
                             className={cn(

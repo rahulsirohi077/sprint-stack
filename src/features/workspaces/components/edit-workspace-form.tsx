@@ -1,5 +1,5 @@
 "use client"
-import { createWorkspaceSchema } from "../schemas";
+import { updateWorkspaceSchema } from "../schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,39 +8,49 @@ import { useForm } from "react-hook-form";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useCreateWorkspace } from "../api/use-create-workspace";
+import { useUpdateWorkspace } from "../api/use-update-workspace";
 import { useRef } from "react";
-import { Divide, ImageIcon } from "lucide-react";
+import { ArrowLeftIcon, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { WorkspaceRow } from "../types";
 
-interface CreateWorkspaceFormProps {
+interface EditWorkspaceFormProps {
     onCancel?: () => void;
+    initialValues: {
+        $id: string;
+        name: string;
+        userId: string;
+        imageUrl?: string;
+        inviteCode: string;
+      };
 }
 
-export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
+export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceFormProps) => {
     const router = useRouter();
-    const { mutate, isPending } = useCreateWorkspace();
+    const { mutate, isPending } = useUpdateWorkspace();
 
     const inputRef = useRef<HTMLInputElement>(null);
 
-    const form = useForm<z.infer<typeof createWorkspaceSchema>>({
-        resolver: zodResolver(createWorkspaceSchema),
+    const form = useForm<z.infer<typeof updateWorkspaceSchema>>({
+        resolver: zodResolver(updateWorkspaceSchema),
         defaultValues: {
-            name: ""
+            ...initialValues,
+            image: initialValues.imageUrl ?? "",
         }
     })
 
-    const onSubmit = (values: z.infer<typeof createWorkspaceSchema>) => {
+    const onSubmit = (values: z.infer<typeof updateWorkspaceSchema>) => {
         const finalValues = {
             ...values,
-            image: values.image instanceof File ? values.image : "",
+            name: values.name ?? initialValues.name,
+            image: values.image instanceof File ? values.image : (values.image ?? ""),
         };
 
-        mutate({ form: finalValues }, {
-            onSuccess: ({ data }) => {
+        mutate({ form: finalValues, param: { workspaceId: initialValues.$id } },{
+            onSuccess: ({data}) => {
                 form.reset();
                 router.push(`/workspaces/${data.$id}`);
             }
@@ -56,9 +66,13 @@ export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
 
     return (
         <Card className="w-full h-full shadow-none border-none">
-            <CardHeader className="flex">
+            <CardHeader className="flex items-center gap-x-4 space-y-0">
+                <Button size={'sm'} variant={'secondary'} onClick={onCancel ? onCancel: ()=>router.push(`/workspaces/${initialValues.$id}`)}>
+                    <ArrowLeftIcon className="size-4 mr-2"/>
+                    Back
+                </Button>
                 <CardTitle className="text-xl font-bold">
-                    Create a new workspace
+                    {initialValues.name}
                 </CardTitle>
             </CardHeader>
             <div className="px-7">
@@ -151,7 +165,6 @@ export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
                                                         Upload Image
                                                     </Button>
                                                 )}
-
                                             </div>
                                         </div>
                                     </div>
@@ -173,7 +186,7 @@ export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
                                 type="submit"
                                 size={'lg'}
                             >
-                                Create Workspace
+                                Save Changes
                             </Button>
                         </div>
                     </form>

@@ -1,11 +1,13 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { ID, Query } from 'node-appwrite';
-import { createWorkspaceSchema, MemberRow, WorkspaceRow } from '../schemas';
+import { createWorkspaceSchema, updateWorkspaceSchema } from '../schemas';
 import { sessionMiddleware } from '@/lib/session-middleware';
 import { DATABASE_ID, IMAGES_BUCKET_ID, MEMBERS_ID, WORKSPACE_ID } from '@/config';
 import { MemberRole } from '@/features/members/type';
 import { generateInviteCode } from '@/lib/utils';
+import { getMember } from '@/features/members/utils';
+import { MemberRow, WorkspaceRow } from '../types';
 
 const app = new Hono()
     .get("/", sessionMiddleware, async (c) => {
@@ -22,12 +24,12 @@ const app = new Hono()
             return c.json({ data: { rows: [], total: 0 } });
         }
 
-        const workspaceId = members.rows.map((member)=> member.workspaceId);
+        const workspaceId = members.rows.map((member) => member.workspaceId);
 
         const workspaces = await databases.listRows<WorkspaceRow>({
             databaseId: DATABASE_ID,
             tableId: WORKSPACE_ID,
-            queries:[
+            queries: [
                 Query.orderDesc("$createdAt"),
                 Query.contains("$id", workspaceId)
             ]
@@ -78,7 +80,61 @@ const app = new Hono()
                 role: MemberRole.ADMIN
             }
         });
-        return c.json({ data: workspace}, 201);
-    });
+        return c.json({ data: workspace }, 201);
+    })
+    .patch(
+        "/:workspaceId",
+        sessionMiddleware,
+        zValidator("form", updateWorkspaceSchema),
+        async (c) => {
+            const databases = c.get("tablesDB");
+            const user = c.get("user")
+            const storage = c.get("storage")
+
+            const { workspaceId } = c.req.param();
+            c.req.valid('form');
+
+            const member = await getMember({
+                databases,
+                workspaceId,
+                userId: user.$id
+            })
+
+            if (!member || member.role !== MemberRole.ADMIN) {
+                return c.json({ error: "Unauthorized" }, 401)
+            }
+
+            const { name, image } = c.req.valid('form');
+
+            let uploadedImageUrl: string | undefined;
+
+            if (image instanceof File) {
+                const file = await storage.createFile({
+                    bucketId: IMAGES_BUCKET_ID,
+                    fileId: ID.unique(),
+                    file: image
+                })
+
+                const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
+                const project = process.env.NEXT_PUBLIC_APPWRITE_PROJECT!;
+                uploadedImageUrl = `${endpoint}/storage/buckets/${IMAGES_BUCKET_ID}/files/${file.$id}/view?project=${project}`;
+            }
+            else {
+                uploadedImageUrl = image;
+            }
+
+            const workspace = await databases.updateRow({
+                databaseId: DATABASE_ID,
+                tableId: WORKSPACE_ID,
+                rowId: workspaceId,
+                data: {
+                    name,
+                    imageUrl: uploadedImageUrl
+                }
+            })
+
+            return c.json({data: workspace})
+        }
+    );
 
 export default app;
