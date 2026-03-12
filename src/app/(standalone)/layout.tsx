@@ -11,7 +11,7 @@ const StandaloneLayout = ({
     return (
         <main className='bg-neutral-100 min-h-screen'>
             <div className='mx-auto max-w-11/12 p-4'>
-                <nav className='flex justify-between items-center h-[73px]'>
+                <nav className='flex justify-between items-center h-18.25'>
                     <Link href={'/'} className='flex gap-2 items-center'>
                         <Image
                             src={'/logo.svg'}

@@ -1,9 +1,7 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { Account, Client, Models } from "node-appwrite";
-import { AUTH_COOKIE } from "./constants";
 import { createSessionClient } from "@/lib/appwrite";
+import { Models } from "node-appwrite";
 
 type CurrentUser = Models.User<Models.Preferences>;
 

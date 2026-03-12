@@ -1,5 +1,6 @@
 import { DATABASE_ID, MEMBERS_ID } from "@/config";
 import { Query, TablesDB } from "node-appwrite"
+import { MemberRow } from "../workspaces/types";
 
 interface GetMemberProps {
     databases: TablesDB;
@@ -12,7 +13,7 @@ export const getMember = async ({
     workspaceId,
     userId
 }:GetMemberProps) => {
-    const members = await databases.listRows({
+    const members = await databases.listRows<MemberRow>({
         databaseId: DATABASE_ID,
         tableId: MEMBERS_ID,
         queries:
