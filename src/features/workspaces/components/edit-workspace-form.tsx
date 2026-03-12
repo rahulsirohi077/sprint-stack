@@ -15,7 +15,6 @@ import Image from "next/image";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { WorkspaceRow } from "../types";
 
 interface EditWorkspaceFormProps {
     onCancel?: () => void;
