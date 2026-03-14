@@ -8,6 +8,8 @@ import { MemberRole } from '@/features/members/type';
 import { generateInviteCode } from '@/lib/utils';
 import { getMember } from '@/features/members/utils';
 import { MemberRow, WorkspaceRow } from '../types';
+import z from 'zod';
+import { error } from 'console';
 
 const app = new Hono()
     .get("/", sessionMiddleware, async (c) => {
@@ -165,6 +167,87 @@ const app = new Hono()
             
             return c.json({data: {$id: workspaceId}});
         }
-    );
+    )
+    .post(
+        "/:workspaceId/reset-invite-code",
+        sessionMiddleware,
+        async (c) => {
+            const databases = c.get("tablesDB");
+            const user = c.get("user");
+
+            const {workspaceId} = c.req.param();
+
+            const member = await getMember({
+                databases,
+                workspaceId,
+                userId: user.$id
+            });
+
+            if(!member || member.role !== MemberRole.ADMIN){
+                return c.json({error:"Unauthorized"},401);
+            }
+
+
+            const worksapce = await databases.updateRow({
+                databaseId: DATABASE_ID,
+                tableId: WORKSPACE_ID,
+                rowId: workspaceId,
+                data:{
+                    inviteCode: generateInviteCode(6)
+                }
+            })
+            
+            return c.json({data: worksapce});
+        }
+    )
+    .post(
+        '/:workspaceId/join',
+        sessionMiddleware,
+        zValidator("json",z.object({code: z.string()})),
+        async (c) => {
+            const {workspaceId} = c.req.param();
+            const {code} = c.req.valid('json');
+
+            const databases = c.get("tablesDB");
+            const user = c.get("user")
+
+            const member = await getMember({
+                databases,
+                workspaceId,
+                userId: user.$id
+            })
+
+            if(member) {
+                return c.json({error:"Already a member"},400);
+            }
+
+            const workspace = await databases.getRow<WorkspaceRow>({
+                databaseId: DATABASE_ID,
+                tableId: WORKSPACE_ID,
+                rowId: workspaceId
+            })
+
+            if(!workspace){
+                return c.json({error:"Invalid Workspace"},400);
+            }
+
+            if(workspace.inviteCode !== code){
+                return c.json({error:"Invalid Invite Code"},400);
+            }
+
+            await databases.createRow<MemberRow>({
+                databaseId:DATABASE_ID,
+                tableId:MEMBERS_ID,
+                rowId: ID.unique(),
+                data:{
+                    workspaceId,
+                    userId: user.$id,
+                    role: MemberRole.MEMBER
+                }
+            })
+
+            return c.json({data: workspace});
+        }
+    )
 
 export default app;
