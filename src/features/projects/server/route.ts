@@ -6,7 +6,7 @@ import { Hono } from "hono";
 import { ID, Query } from "node-appwrite";
 import z from "zod";
 import { ProjectsRow } from "../type";
-import { createProjectSchema } from "../schema";
+import { createProjectSchema, updateProjectSchema } from "../schema";
 import { MemberRole } from "@/features/members/type";
 
 const app = new Hono()
@@ -91,5 +91,64 @@ const app = new Hono()
             return c.json({ data: projects });
         }
     )
+    .patch(
+            "/:projectId",
+            sessionMiddleware,
+            zValidator("form", updateProjectSchema),
+            async (c) => {
+                const databases = c.get("tablesDB");
+                const user = c.get("user")
+                const storage = c.get("storage")
+    
+                const { projectId } = c.req.param();
+                c.req.valid('form');
 
+                const existingProject = await databases.getRow<ProjectsRow>({
+                    databaseId:DATABASE_ID,
+                    tableId:PROJECTS_ID,
+                    rowId: projectId
+                })
+    
+                const member = await getMember({
+                    databases,
+                    workspaceId: existingProject.workspaceId,
+                    userId: user.$id
+                })
+    
+                if (!member) {
+                    return c.json({ error: "Unauthorized" }, 401)
+                }
+    
+                const { name, image } = c.req.valid('form');
+    
+                let uploadedImageUrl: string | undefined;
+    
+                if (image instanceof File) {
+                    const file = await storage.createFile({
+                        bucketId: IMAGES_BUCKET_ID,
+                        fileId: ID.unique(),
+                        file: image
+                    })
+    
+                    const endpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!;
+                    const project = process.env.NEXT_PUBLIC_APPWRITE_PROJECT!;
+                    uploadedImageUrl = `${endpoint}/storage/buckets/${IMAGES_BUCKET_ID}/files/${file.$id}/view?project=${project}`;
+                }
+                else {
+                    uploadedImageUrl = image;
+                }
+    
+                const project = await databases.updateRow({
+                    databaseId: DATABASE_ID,
+                    tableId: PROJECTS_ID,
+                    rowId: projectId,
+                    data: {
+                        name,
+                        imageUrl: uploadedImageUrl
+                    }
+                })
+    
+                return c.json({data: project})
+            }
+        )
 export default app;
