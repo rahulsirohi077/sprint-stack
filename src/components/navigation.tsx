@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 
 import { cn } from "@/lib/utils";
+import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 
 const routes = [
     {
@@ -36,7 +37,7 @@ const routes = [
 
 const Navigation = () => {
     const pathname = usePathname();
-    const workspaceId = usePathname();
+    const workspaceId = useWorkspaceId();
 
 
     return (
@@ -49,7 +50,7 @@ const Navigation = () => {
                 return (
                     <li key={fullHref}>
                         <Link
-                            href={route.href}
+                            href={fullHref}
                             className={cn(
                                 "flex items-center gap-x-2.5 rounded-md px-3 py-2 text-sm font-medium transition hover:text-primary text-neutral-500",
                                 isActive
