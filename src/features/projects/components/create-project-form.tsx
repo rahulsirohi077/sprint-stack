@@ -46,8 +46,8 @@ export const CreateProjectForm = ({ onCancel }: CreateProjectFormProps) => {
         mutate({ form: finalValues }, {
             onSuccess: ({ data }) => {
                 form.reset();
-                onCancel?.();
-                // TODO: Redirect to project screen
+                router.push(`/workspaces/${workspaceId}/projects/${data.$id}`)
+                // onCancel?.();
             }
         })
     }
@@ -171,12 +171,14 @@ export const CreateProjectForm = ({ onCancel }: CreateProjectFormProps) => {
                                 variant={'secondary'}
                                 onClick={onCancel}
                                 className={cn(!onCancel && "invisible")}
+                                disabled={isPending}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 size={'lg'}
+                                disabled={isPending}
                             >
                                 Create Project
                             </Button>
