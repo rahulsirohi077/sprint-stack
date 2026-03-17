@@ -44,7 +44,9 @@ const Navigation = () => {
         <ul className="flex flex-col gap-y-1">
             {routes.map((route) => {
                 const fullHref = `/workspaces/${workspaceId}${route.href}`
-                const isActive = pathname === fullHref;
+                const isActive = route.href === "/"
+                    ? pathname === fullHref || pathname === `/workspaces/${workspaceId}`
+                    : pathname === fullHref;
                 const Icon = isActive ? route.activeIcon : route.icon;
 
                 return (

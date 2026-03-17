@@ -7,36 +7,32 @@ import { getMember } from "../members/utils";
 import { WorkspaceList, WorkspaceRow } from "./types";
 
 export const getWorkspaces = async (): Promise<WorkspaceList | null> => {
-    try {
-        const {account, databases} = await createSessionClient();
+    const {account, databases} = await createSessionClient();
 
-        const user = await account.get();
+    const user = await account.get();
 
-       const members = await databases.listRows({
-            databaseId: DATABASE_ID,
-            tableId: MEMBERS_ID,
-            queries: [Query.equal("userId", user.$id)]
-        })
+   const members = await databases.listRows({
+        databaseId: DATABASE_ID,
+        tableId: MEMBERS_ID,
+        queries: [Query.equal("userId", user.$id)]
+    })
 
-        if (members.total === 0) {
-            return  { rows: [], total: 0 } as WorkspaceList;
-        }
-
-        const workspaceId = members.rows.map((member)=> member.workspaceId);
-
-        const workspaces = await databases.listRows<WorkspaceRow>({
-            databaseId: DATABASE_ID,
-            tableId: WORKSPACE_ID,
-            queries:[
-                Query.orderDesc("$createdAt"),
-                Query.contains("$id", workspaceId)
-            ]
-        })
-
-        return workspaces;
-    } catch (error) {
+    if (members.total === 0) {
         return { rows: [], total: 0 } as WorkspaceList;
     }
+
+    const workspaceId = members.rows.map((member)=> member.workspaceId);
+
+    const workspaces = await databases.listRows<WorkspaceRow>({
+        databaseId: DATABASE_ID,
+        tableId: WORKSPACE_ID,
+        queries:[
+            Query.orderDesc("$createdAt"),
+            Query.contains("$id", workspaceId)
+        ]
+    })
+
+    return workspaces;
 };
 
 interface GetWorkspaceProps {
@@ -44,30 +40,26 @@ interface GetWorkspaceProps {
 }
 
 export const getWorkspace = async ({workspaceId}:GetWorkspaceProps): Promise<WorkspaceRow | null> => {
-    try {
-        const {account, databases} = await createSessionClient();
-        const user = await account.get();
+    const {account, databases} = await createSessionClient();
+    const user = await account.get();
 
-        const member = await getMember({
-            databases,
-            userId: user.$id,
-            workspaceId
-        })
+    const member = await getMember({
+        databases,
+        userId: user.$id,
+        workspaceId
+    })
 
-        if(!member){
-            return null;
-        }
-
-        const workspaces = await databases.getRow<WorkspaceRow>({
-            databaseId: DATABASE_ID,
-            tableId: WORKSPACE_ID,
-            rowId: workspaceId
-        })
-
-        return workspaces;
-    } catch (error) {
-        return null;
+    if(!member){
+        throw new Error("Workspace not found or access denied");
     }
+
+    const workspaces = await databases.getRow<WorkspaceRow>({
+        databaseId: DATABASE_ID,
+        tableId: WORKSPACE_ID,
+        rowId: workspaceId
+    })
+
+    return workspaces;
 };
 
 interface GetWorkspaceInfoProps {
@@ -75,19 +67,19 @@ interface GetWorkspaceInfoProps {
 }
 
 export const getWorkspaceInfo = async ({workspaceId}:GetWorkspaceInfoProps) => {
-    try {
-        const {databases} = await createSessionClient();
+    const {databases} = await createSessionClient();
 
-        const workspaces = await databases.getRow<WorkspaceRow>({
-            databaseId: DATABASE_ID,
-            tableId: WORKSPACE_ID,
-            rowId: workspaceId
-        })
+    const workspaces = await databases.getRow<WorkspaceRow>({
+        databaseId: DATABASE_ID,
+        tableId: WORKSPACE_ID,
+        rowId: workspaceId
+    })
 
-        return {
-            name: workspaces.name
-        };
-    } catch (error) {
-        return null;
+    if (!workspaces) {
+        throw new Error("Workspace info not found");
     }
+
+    return {
+        name: workspaces.name
+    };
 };
