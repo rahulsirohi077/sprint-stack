@@ -1,20 +1,38 @@
-import { client } from "@/lib/rpc"
-import { useQuery } from "@tanstack/react-query"
-import { toast } from "sonner"
-import { useEffect } from "react"
+import { client } from "@/lib/rpc";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { toast } from "sonner";
+import { TaskStatus } from "../types";
 
 interface UseGetTasksProps {
     workspaceId:string;
+    projectId?:string | null;
+    status?: TaskStatus | null;
+    assigneeId?: string | null;
+    dueDate?: string | null;
+    search?: string|null;
 }
 
 export const useGetTasks = ({
-    workspaceId
+    workspaceId,
+    projectId,
+    status,
+    assigneeId,
+    dueDate,
+    search
 }:UseGetTasksProps) => {
     const query = useQuery({
-        queryKey: ['tasks',workspaceId],
+        queryKey: ['tasks', workspaceId, projectId, status, assigneeId, dueDate, search],
         queryFn: async () => {
             const response = await client.api.tasks.$get({
-                query: {workspaceId}
+                query: {
+                    workspaceId,
+                    projectId: projectId ?? undefined,
+                    status: status ?? undefined,
+                    assigneeId: assigneeId ?? undefined,
+                    dueDate: dueDate ?? undefined,
+                    search: search ?? undefined,
+                }
             });
 
             if(!response.ok) {
