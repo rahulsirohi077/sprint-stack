@@ -184,7 +184,7 @@ const app = new Hono()
                 ? highestPositionTask.rows[0].position + 1000
                 : 1000;
 
-            const task = await databases.createRow<Task>({
+            const task = await databases.createRow<Omit<Task, "dueDate"> & { dueDate: Date }>({
                 databaseId:DATABASE_ID,
                 tableId:TASKS_ID,
                 rowId: ID.unique(),
