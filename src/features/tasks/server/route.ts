@@ -12,6 +12,43 @@ import { ProjectsRow } from "@/features/projects/type";
 import { MemberRow } from "@/features/workspaces/types";
 
 const app = new Hono()
+    .delete(
+        "/:taskId",
+        sessionMiddleware,
+        async (c) => {
+            const user = c.get("user")
+            const databases = c.get("tablesDB")
+            const { taskId } = c.req.param();
+            
+            const task = await databases.getRow<Task>({
+                databaseId: DATABASE_ID,
+                tableId: TASKS_ID,
+                rowId: taskId
+            })
+
+            if(!task){
+                return c.json({error: "Not Found"},404)
+            }
+
+            const member = await getMember({
+                databases,
+                workspaceId: task.workspaceId,
+                userId: user.$id
+            })
+
+            if(!member) {
+                return c.json({error: "Unauthorized"},401)
+            }
+
+            await databases.deleteRow({
+                databaseId: DATABASE_ID,
+                tableId: TASKS_ID,
+                rowId: taskId
+            })
+
+            return c.json({data: { $id: task.$id }})
+        }
+    )
     .get(
         '/',
         sessionMiddleware,
@@ -203,5 +240,119 @@ const app = new Hono()
             return c.json({data: task});
         }
     )
+    .patch(
+        "/:taskId",
+        sessionMiddleware,
+        zValidator('json', createTaskSchema.partial()),
+        async (c) => {
+            const user = c.get("user");
+            const databases = c.get("tablesDB");
+            const { taskId } = c.req.param();
+
+            const {
+                name,
+                status,
+                projectId,
+                dueDate,
+                assigneeId,
+                description
+            } = c.req.valid("json");
+
+            const existingTask = await databases.getRow<Task>({
+                databaseId: DATABASE_ID,
+                tableId: TASKS_ID,
+                rowId: taskId
+            });
+
+            if (!existingTask) {
+                return c.json({ error: "Not Found" }, 404);
+            }
+
+            const member = await getMember({
+                databases,
+                workspaceId: existingTask.workspaceId,
+                userId: user.$id
+            });
+
+            if (!member) {
+                return c.json({ error: "Unauthorized" }, 401);
+            }
+
+            const task = await databases.updateRow<Omit<Task, "dueDate"> & { dueDate?: Date }>({
+                databaseId: DATABASE_ID,
+                tableId: TASKS_ID,
+                rowId: taskId,
+                data: {
+                    ...(name !== undefined && { name }),
+                    ...(status !== undefined && { status }),
+                    ...(projectId !== undefined && { projectId }),
+                    ...(dueDate !== undefined && { dueDate }),
+                    ...(assigneeId !== undefined && { assigneeId }),
+                    ...(description !== undefined && { description }),
+                }
+            });
+
+            return c.json({ data: task });
+        }
+    )
+    .get(
+        "/:taskId",
+        sessionMiddleware,
+        async (c) => {
+            const { users } = await createAdminClient();
+            const databases = c.get("tablesDB");
+            const user = c.get("user");
+            const { taskId } = c.req.param();
+
+            const task = await databases.getRow<Task>({
+                databaseId: DATABASE_ID,
+                tableId: TASKS_ID,
+                rowId: taskId
+            });
+
+            if (!task) {
+                return c.json({ error: "Not Found" }, 404);
+            }
+
+            const member = await getMember({
+                databases,
+                workspaceId: task.workspaceId,
+                userId: user.$id
+            });
+
+            if (!member) {
+                return c.json({ error: "Unauthorized" }, 401);
+            }
+
+            const project = await databases.getRow<ProjectsRow>({
+                databaseId: DATABASE_ID,
+                tableId: PROJECTS_ID,
+                rowId: task.projectId
+            });
+
+            const taskMember = await databases.getRow<MemberRow>({
+                databaseId: DATABASE_ID,
+                tableId: MEMBERS_ID,
+                rowId: task.assigneeId
+            });
+
+            const assigneeUser = await users.get({userId:taskMember.userId});
+
+            const assignee = {
+                ...taskMember,
+                name: assigneeUser.name,
+                email: assigneeUser.email
+            };
+
+            return c.json({
+                data: {
+                    ...task,
+                    project,
+                    assignee
+                }
+            });
+        }
+    )
+
 
 export default app;
