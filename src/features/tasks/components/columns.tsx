@@ -1,23 +1,13 @@
 "use client";
-import { ColumnDef } from "@tanstack/react-table";
-import { Task } from "../types";
-import { ArrowUpDown, MoreVertical } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ProjectsRow } from "@/features/projects/type";
-import { MemberRow } from "@/features/workspaces/types";
-import ProjectAvatar from "@/features/projects/components/project-avatar";
+import { Button } from "@/components/ui/button";
 import MemberAvatar from "@/features/members/components/members-avatar";
+import ProjectAvatar from "@/features/projects/components/project-avatar";
+import { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreVertical } from "lucide-react";
+import { Task, TaskTableRow } from "../types";
+import { TaskActions } from "./task-actions";
 import { TaskDate } from "./task-date";
-import { TaskAction } from "./task-actions";
-
-type TaskTableRow = Task & {
-  project?: ProjectsRow;
-  assignee?: MemberRow & {
-    name: string;
-    email: string;
-  };
-};
 
 const statusBadgeClassName: Record<Task["status"], string> = {
   BACKLOG: "bg-muted text-muted-foreground",
@@ -152,11 +142,11 @@ export const columns: ColumnDef<TaskTableRow>[] = [
       const projectId = row.original.projectId;
 
       return (
-        <TaskAction id={id} projectId={projectId}>
+        <TaskActions id={id} projectId={projectId}>
             <Button variant={'ghost'} className="size-8 p-0">
               <MoreVertical/>
             </Button>
-        </TaskAction>
+        </TaskActions>
       )
     }
   }

@@ -221,7 +221,7 @@ const app = new Hono()
                 ? highestPositionTask.rows[0].position + 1000
                 : 1000;
 
-            const task = await databases.createRow<Omit<Task, "dueDate"> & { dueDate: Date }>({
+            const task = await databases.createRow({
                 databaseId:DATABASE_ID,
                 tableId:TASKS_ID,
                 rowId: ID.unique(),
@@ -278,7 +278,7 @@ const app = new Hono()
                 return c.json({ error: "Unauthorized" }, 401);
             }
 
-            const task = await databases.updateRow<Omit<Task, "dueDate"> & { dueDate?: Date }>({
+            const task = await databases.updateRow({
                 databaseId: DATABASE_ID,
                 tableId: TASKS_ID,
                 rowId: taskId,
@@ -351,6 +351,87 @@ const app = new Hono()
                     assignee
                 }
             });
+        }
+    )
+    .post(
+        "/bulk-update",
+        sessionMiddleware,
+        zValidator(
+            'json',
+            z.object({
+                tasks: z.array(
+                    z.object({
+                        $id: z.string(),
+                        status: z.enum(TaskStatus),
+                        position: z.number().int().positive().min(1000).max(1_000_000)
+                    })
+                )
+            })
+        ),
+        async (c) => {
+            const user = c.get("user");
+            const databases = c.get("tablesDB");
+
+            const { tasks } = c.req.valid("json");
+
+            if (tasks.length === 0) {
+                return c.json({ data: [] });
+            }
+
+            const uniqueTaskUpdates = Array.from(
+                new Map(tasks.map((task) => [task.$id, task])).values()
+            );
+
+            const existingTasks = await Promise.all(
+                uniqueTaskUpdates.map((task) =>
+                    databases.getRow<Task>({
+                        databaseId: DATABASE_ID,
+                        tableId: TASKS_ID,
+                        rowId: task.$id,
+                    })
+                )
+            );
+
+            if (existingTasks.some((task) => !task)) {
+                return c.json({ error: "Not Found" }, 404);
+            }
+
+            const workspaceIds = Array.from(
+                new Set(existingTasks.map((task) => task.workspaceId))
+            );
+
+            if (workspaceIds.length !== 1) {
+                return c.json(
+                    { error: "Tasks must belong to the same workspace" },
+                    400
+                );
+            }
+
+            const member = await getMember({
+                databases,
+                workspaceId: workspaceIds[0],
+                userId: user.$id,
+            });
+
+            if (!member) {
+                return c.json({ error: "Unauthorized" }, 401);
+            }
+
+            const updatedTasks = await Promise.all(
+                uniqueTaskUpdates.map((task) =>
+                    databases.updateRow<Task>({
+                        databaseId: DATABASE_ID,
+                        tableId: TASKS_ID,
+                        rowId: task.$id,
+                        data: {
+                            status: task.status,
+                            position: task.position,
+                        },
+                    })
+                )
+            );
+
+            return c.json({ data: updatedTasks });
         }
     )
 

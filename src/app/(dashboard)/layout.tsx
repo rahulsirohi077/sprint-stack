@@ -22,7 +22,7 @@ const DashboardLayout = ({
                     <Sidebar />
                 </div>
                 <div className='lg:pl-66 w-full'>
-                    <div className='mx-auto max-w-11/12 h-full'>
+                    <div className='mx-auto max-w-full h-full'>
                         <Navbar/>
                         <main className='h-full py-8 px-6 flex flex-col'>
                             {children}
