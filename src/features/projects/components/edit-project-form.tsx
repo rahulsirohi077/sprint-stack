@@ -1,9 +1,8 @@
 "use client";
-import { zodResolver } from "@hookform/resolvers/zod";
-import z from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DottedSeparator } from "@/components/dotted-separator";
-import { useForm } from "react-hook-form";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -13,19 +12,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useRef } from "react";
-import { ArrowLeftIcon, CopyIcon, ImageIcon } from "lucide-react";
-import Image from "next/image";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useConfirm } from "@/hooks/use-confirm";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowLeftIcon, ImageIcon } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useRef } from "react";
+import { useForm } from "react-hook-form";
+import z from "zod";
+import { useDeleteProject } from "../api/use-delete-project";
 import { useUpdateProject } from "../api/use-update-project";
 import { updateProjectSchema } from "../schema";
 import { ProjectsRow } from "../type";
-import { useDeleteProject } from "../api/use-delete-project";
 
 interface EditProjectFormProps {
   onCancel?: () => void;
@@ -86,13 +85,7 @@ export const EditProjectForm = ({
     };
 
     mutate(
-      { form: finalValues, param: { projectId: initialValues.$id } },
-      {
-        onSuccess: ({ data }) => {
-          // form.reset();
-          // router.push(`/workspaces/${data.$id}`);
-        },
-      },
+      { form: finalValues, param: { projectId: initialValues.$id } }
     );
   };
 
@@ -116,6 +109,7 @@ export const EditProjectForm = ({
                 ? onCancel
                 : () => router.push(`/workspaces/${initialValues.workspaceId}/projects/${initialValues.$id}`)
             }
+            disabled={isPending || isDeletingProject}
           >
             <ArrowLeftIcon className="size-4 mr-2" />
             Back
@@ -140,6 +134,7 @@ export const EditProjectForm = ({
                           {...field}
                           placeholder="Enter project name"
                           autoComplete="off"
+                          disabled={isPending || isDeletingProject}
                         />
                       </FormControl>
                       <FormMessage />
@@ -183,12 +178,12 @@ export const EditProjectForm = ({
                             accept=".jpg, .png, .jpeg, .svg"
                             ref={inputRef}
                             onChange={handleImageChange}
-                            disabled={isPending}
+                            disabled={isPending || isDeletingProject}
                           />
                           {field.value ? (
                             <Button
                               type="button"
-                              disabled={isPending}
+                              disabled={isPending || isDeletingProject}
                               variant={"destructive"}
                               size={"xs"}
                               className="w-fit mt-2"
@@ -204,7 +199,7 @@ export const EditProjectForm = ({
                           ) : (
                             <Button
                               type="button"
-                              disabled={isPending}
+                              disabled={isPending || isDeletingProject}
                               variant={"teritary"}
                               size={"xs"}
                               className="w-fit mt-2"
@@ -226,12 +221,13 @@ export const EditProjectForm = ({
                   size={"lg"}
                   variant={"secondary"}
                   onClick={onCancel}
+                  disabled={isPending || isDeletingProject}
                   className={cn(!onCancel && "invisible")}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" size={"lg"}>
-                  Save Changes
+                <Button type="submit" size={"lg"} disabled={isPending || isDeletingProject}>
+                  {isPending ? "Saving..." : isDeletingProject ? "Deleting..." : "Save Changes"}
                 </Button>
               </div>
             </form>
@@ -252,10 +248,10 @@ export const EditProjectForm = ({
               size={"sm"}
               variant={"destructive"}
               type="button"
-              disabled={isPending}
+              disabled={isPending ||isDeletingProject}
               onClick={() => handleDelete()}
             >
-              Delete Project
+              {isDeletingProject ? "Deleting Project..." : "Delete Project"}
             </Button>
           </div>
         </CardContent>

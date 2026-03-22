@@ -9,7 +9,6 @@ import { generateInviteCode } from '@/lib/utils';
 import { getMember } from '@/features/members/utils';
 import { MemberRow, WorkspaceRow } from '../types';
 import z from 'zod';
-import { error } from 'console';
 
 const app = new Hono()
     .get("/", sessionMiddleware, async (c) => {
@@ -38,6 +37,56 @@ const app = new Hono()
         })
 
         return c.json({ data: workspaces }, 200);
+    })
+    .get("/:workspaceId", sessionMiddleware, async (c) => {
+        const user = c.get('user')
+        const databases = c.get("tablesDB");
+
+        const { workspaceId } = c.req.param();
+
+        const member = await getMember({
+            databases,
+            workspaceId,
+            userId: user.$id
+        });
+
+        if (!member) {
+            return c.json({ error: "Unauthorized" }, 401);
+        }
+
+        const workspace = await databases.getRow<WorkspaceRow>({
+            databaseId: DATABASE_ID,
+            tableId: WORKSPACE_ID,
+            rowId: workspaceId
+        });
+
+        if (!workspace) {
+            return c.json({ error: "Not Found" }, 404);
+        }
+
+        return c.json({ data: workspace }, 200);
+    })
+    .get("/:workspaceId/info", sessionMiddleware, async (c) => {
+        const databases = c.get("tablesDB");
+        const { workspaceId } = c.req.param();
+
+        const workspace = await databases.getRow<WorkspaceRow>({
+            databaseId: DATABASE_ID,
+            tableId: WORKSPACE_ID,
+            rowId: workspaceId
+        });
+
+        if (!workspace) {
+            return c.json({ error: "Not Found" }, 404);
+        }
+
+        return c.json({
+            data: {
+                $id: workspace.$id,
+                name: workspace.name,
+                imageUrl: workspace.imageUrl
+            }
+        }, 200);
     })
     .post('/', zValidator('form', createWorkspaceSchema), sessionMiddleware, async (c) => {
         const tablesDB = c.get('tablesDB');

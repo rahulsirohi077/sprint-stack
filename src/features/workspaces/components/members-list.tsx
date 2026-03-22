@@ -70,7 +70,7 @@ export const MembersList = () => {
         <DottedSeparator />
       </div>
       <CardContent className="p-5">
-        {data?.documents?.map((member, index) => (
+        {data?.rows?.map((member, index) => (
           <Fragment key={member.$id}>
             <div className="flex items-center gap-2">
               <MemberAvatar
@@ -117,7 +117,7 @@ export const MembersList = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {index < data.documents.length - 1 && (
+            {index < data.rows.length - 1 && (
               <Separator className="my-2.5" />
             )}
           </Fragment>

@@ -20,3 +20,7 @@ export function generateInviteCode(length:number){
 
   return code
 }
+
+export function formatTaskStatus(status: string) {
+  return status.replaceAll("_", " ")
+}
