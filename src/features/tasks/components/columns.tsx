@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import MemberAvatar from "@/features/members/components/members-avatar";
 import ProjectAvatar from "@/features/projects/components/project-avatar";
+import { formatTaskStatus } from "@/lib/utils";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreVertical } from "lucide-react";
 import { Task, TaskTableRow } from "../types";
@@ -130,7 +131,7 @@ export const columns: ColumnDef<TaskTableRow>[] = [
           variant="secondary"
           className={statusBadgeClassName[status]}
         >
-          {status.replace("_", " ")}
+          {formatTaskStatus(status)}
         </Badge>
       );
     },
