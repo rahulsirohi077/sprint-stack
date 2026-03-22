@@ -7,7 +7,6 @@ import { ID, Query } from "node-appwrite";
 import z from "zod";
 import { ProjectsRow } from "../type";
 import { createProjectSchema, updateProjectSchema } from "../schema";
-import { MemberRole } from "@/features/members/type";
 
 const app = new Hono()
     .post(
@@ -89,6 +88,38 @@ const app = new Hono()
             })
 
             return c.json({ data: projects });
+        }
+    )
+    .get(
+        "/:projectId",
+        sessionMiddleware,
+        async (c) => {
+            const databases = c.get("tablesDB");
+            const user = c.get("user");
+
+            const { projectId } = c.req.param();
+
+            const project = await databases.getRow<ProjectsRow>({
+                databaseId: DATABASE_ID,
+                tableId: PROJECTS_ID,
+                rowId: projectId
+            });
+
+            if (!project) {
+                return c.json({ error: "Not Found" }, 404);
+            }
+
+            const member = await getMember({
+                databases,
+                workspaceId: project.workspaceId,
+                userId: user.$id
+            });
+
+            if (!member) {
+                return c.json({ error: "Unauthorized" }, 401);
+            }
+
+            return c.json({ data: project });
         }
     )
     .patch(
