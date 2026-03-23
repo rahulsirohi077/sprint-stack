@@ -1,13 +1,16 @@
 import { zValidator } from '@hono/zod-validator';
 import { Hono } from 'hono';
 import { ID, Query } from 'node-appwrite';
+import { endOfMonth, startOfMonth, subMonths } from 'date-fns';
 import { createWorkspaceSchema, updateWorkspaceSchema } from '../schemas';
 import { sessionMiddleware } from '@/lib/session-middleware';
-import { DATABASE_ID, IMAGES_BUCKET_ID, MEMBERS_ID, WORKSPACE_ID } from '@/config';
+import { DATABASE_ID, IMAGES_BUCKET_ID, MEMBERS_ID, PROJECTS_ID, TASKS_ID, WORKSPACE_ID } from '@/config';
 import { MemberRole } from '@/features/members/type';
-import { generateInviteCode } from '@/lib/utils';
+import { calculateDifference, generateInviteCode } from '@/lib/utils';
 import { getMember } from '@/features/members/utils';
 import { MemberRow, WorkspaceRow } from '../types';
+import { ProjectsRow } from '@/features/projects/type';
+import { Task, TaskStatus } from '@/features/tasks/types';
 import z from 'zod';
 
 const app = new Hono()
@@ -298,5 +301,155 @@ const app = new Hono()
             return c.json({data: workspace});
         }
     )
+    .get(
+            "/:workspaceId/analytics",
+            sessionMiddleware,
+            async (c) => {
+                const databases = c.get("tablesDB");
+                const user = c.get("user");
+    
+                const { workspaceId } = c.req.param();
+    
+                const workspace = await databases.getRow<WorkspaceRow>({
+                    databaseId: DATABASE_ID,
+                    tableId: WORKSPACE_ID,
+                    rowId: workspaceId,
+                });
+    
+                if (!workspace) {
+                    return c.json({ error: "Not Found" }, 404);
+                }
+    
+                const member = await getMember({
+                    databases,
+                    workspaceId,
+                    userId: user.$id,
+                });
+    
+                if (!member) {
+                    return c.json({ error: "Unauthorized" }, 401);
+                }
+    
+                const now = new Date();
+                const thisMonthStart = startOfMonth(now);
+                const thisMonthEnd = endOfMonth(now);
+                const lastMonthDate = subMonths(now, 1);
+                const lastMonthStart = startOfMonth(lastMonthDate);
+                const lastMonthEnd = endOfMonth(lastMonthDate);
+    
+                const [thisMonthTasks, lastMonthTasks, thisMonthProjects, lastMonthProjects] = await Promise.all([
+                    databases.listRows<Task>({
+                        databaseId: DATABASE_ID,
+                        tableId: TASKS_ID,
+                        queries: [
+                            Query.equal("workspaceId", workspaceId),
+                            Query.between(
+                                "$createdAt",
+                                thisMonthStart.toISOString(),
+                                thisMonthEnd.toISOString()
+                            ),
+                        ],
+                    }),
+                    databases.listRows<Task>({
+                        databaseId: DATABASE_ID,
+                        tableId: TASKS_ID,
+                        queries: [
+                            Query.equal("workspaceId", workspaceId),
+                            Query.between(
+                                "$createdAt",
+                                lastMonthStart.toISOString(),
+                                lastMonthEnd.toISOString()
+                            ),
+                        ],
+                    }),
+                    databases.listRows<ProjectsRow>({
+                        databaseId: DATABASE_ID,
+                        tableId: PROJECTS_ID,
+                        queries: [
+                            Query.equal("workspaceId", workspaceId),
+                            Query.between(
+                                "$createdAt",
+                                thisMonthStart.toISOString(),
+                                thisMonthEnd.toISOString()
+                            ),
+                        ],
+                    }),
+                    databases.listRows<ProjectsRow>({
+                        databaseId: DATABASE_ID,
+                        tableId: PROJECTS_ID,
+                        queries: [
+                            Query.equal("workspaceId", workspaceId),
+                            Query.between(
+                                "$createdAt",
+                                lastMonthStart.toISOString(),
+                                lastMonthEnd.toISOString()
+                            ),
+                        ],
+                    }),
+                ]);
+    
+                const thisMonthProjectCount = thisMonthProjects.total;
+                const lastMonthProjectCount = lastMonthProjects.total;
+                const thisMonthTaskCount = thisMonthTasks.total;
+                const lastMonthTaskCount = lastMonthTasks.total;
+    
+                const thisMonthIncompleteTaskCount = thisMonthTasks.rows.filter(
+                    (task) => task.status !== TaskStatus.DONE
+                ).length;
+                const lastMonthIncompleteTaskCount = lastMonthTasks.rows.filter(
+                    (task) => task.status !== TaskStatus.DONE
+                ).length;
+    
+                const thisMonthCompletedTaskCount = thisMonthTasks.rows.filter(
+                    (task) => task.status === TaskStatus.DONE
+                ).length;
+                const lastMonthCompletedTaskCount = lastMonthTasks.rows.filter(
+                    (task) => task.status === TaskStatus.DONE
+                ).length;
+    
+                const thisMonthAssignedTaskCount = thisMonthTasks.rows.filter(
+                    (task) => task.assigneeId === member.$id
+                ).length;
+                const lastMonthAssignedTaskCount = lastMonthTasks.rows.filter(
+                    (task) => task.assigneeId === member.$id
+                ).length;
+    
+                const thisMonthOverdueTaskCount = thisMonthTasks.rows.filter(
+                    (task) => task.status !== TaskStatus.DONE && new Date(task.dueDate) < now
+                ).length;
+                const lastMonthOverdueTaskCount = lastMonthTasks.rows.filter(
+                    (task) => task.status !== TaskStatus.DONE && new Date(task.dueDate) < now
+                ).length;
+    
+                return c.json({
+                    data: {
+                        projectCount: thisMonthProjectCount,
+                        projectDifference: calculateDifference(thisMonthProjectCount, lastMonthProjectCount),
+                        taskCount: thisMonthTaskCount,
+                        taskDifference: calculateDifference(thisMonthTaskCount, lastMonthTaskCount),
+                        incompleteTaskCount: thisMonthIncompleteTaskCount,
+                        incompleteTaskDifference: calculateDifference(
+                            thisMonthIncompleteTaskCount,
+                            lastMonthIncompleteTaskCount
+                        ),
+                        completedTaskCount: thisMonthCompletedTaskCount,
+                        completedTaskDifference: calculateDifference(
+                            thisMonthCompletedTaskCount,
+                            lastMonthCompletedTaskCount
+                        ),
+                        assignedTaskCount: thisMonthAssignedTaskCount,
+                        assignedTaskDifference: calculateDifference(
+                            thisMonthAssignedTaskCount,
+                            lastMonthAssignedTaskCount
+                        ),
+                        overdueTaskCount: thisMonthOverdueTaskCount,
+                        overdueTaskDifference: calculateDifference(
+                            thisMonthOverdueTaskCount,
+                            lastMonthOverdueTaskCount
+                        ),
+                    },
+                });
+            }
+        )
 
 export default app;

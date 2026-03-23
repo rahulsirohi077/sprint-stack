@@ -5,6 +5,7 @@ import MemberAvatar from '@/features/members/components/members-avatar';
 import { formatTaskStatus } from '@/lib/utils';
 import React from 'react'
 import { Task } from '../types';
+import { STATUS_BADGE_CLASS_NAME } from '../constants';
 import { TaskDate } from './task-date';
 import { Button } from '@/components/ui/button';
 import { PencilIcon } from 'lucide-react';
@@ -15,14 +16,6 @@ import { useEditTaskModal } from '../hooks/use-edit-task-modal';
 interface TaskOverviewProps {
   task: Task;
 }
-
-const statusBadgeClassName: Record<Task["status"], string> = {
-  BACKLOG: "bg-muted text-muted-foreground",
-  TODO: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
-  IN_PROGRESS: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  IN_REVIEW: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-  DONE: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-};
 
 const TaskOverview = ({ task }: TaskOverviewProps) => {
     const { open } = useEditTaskModal();
@@ -52,7 +45,7 @@ const TaskOverview = ({ task }: TaskOverviewProps) => {
                 </OverviewProperty>
 
                 <OverviewProperty label='Status'>
-                    <Badge variant='secondary' className={statusBadgeClassName[task.status]}>
+                    <Badge variant='secondary' className={STATUS_BADGE_CLASS_NAME[task.status]}>
                         {formatTaskStatus(task.status)}
                     </Badge>
                 </OverviewProperty>
