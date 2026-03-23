@@ -13,6 +13,7 @@ import { FcGoogle } from 'react-icons/fc'
 import z from 'zod'
 import { loginSchema } from '../schemas'
 import { useLogin } from '../api/use-login'
+import { signUpWithGithub, signUpWithGoogle } from '@/lib/server/oauth'
 
 
 const SignInCard = () => {
@@ -85,6 +86,7 @@ const SignInCard = () => {
             </div>
             <CardContent className='flex flex-col gap-y-4'>
                 <Button
+                    onClick={signUpWithGoogle}
                     disabled={isPending}
                     variant={"secondary"}
                     size={"lg"}
@@ -94,6 +96,7 @@ const SignInCard = () => {
                     Login with Google
                 </Button>
                 <Button
+                    onClick={signUpWithGithub}
                     disabled={isPending}
                     variant={"secondary"}
                     size={"lg"}

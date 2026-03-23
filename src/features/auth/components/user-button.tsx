@@ -25,6 +25,8 @@ export const UserButton = () => {
 
     const { name, email } = user;
 
+    const displayName = name?.trim() || email?.split("@")[0] || "User";
+
     const avatarFallback = name ? name.charAt(0).toUpperCase()
         : email.charAt(0).toUpperCase() ?? "U"
 
@@ -47,7 +49,7 @@ export const UserButton = () => {
                     </Avatar>
                     <div className="flex flex-col items-center justify-center">
                         <p className="text-sm font-medium text-neutral-900">
-                            {name || "User"}
+                            {displayName}
                         </p>
                         <p className="text-xs text-neutral-500">
                             {email}
