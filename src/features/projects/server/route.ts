@@ -9,10 +9,7 @@ import z from "zod";
 import { ProjectsRow } from "../type";
 import { createProjectSchema, updateProjectSchema } from "../schema";
 import { Task, TaskStatus } from "@/features/tasks/types";
-
-const calculateDifference = (current: number, previous: number) => {
-    return current - previous;
-};
+import { calculateDifference } from "@/lib/utils";
 
 const app = new Hono()
     .post(

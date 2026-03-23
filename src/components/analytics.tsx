@@ -37,6 +37,15 @@ const getTrendColor = (value: number | undefined) => {
 };
 
 const analyticsItems = (data: AnalyticsData) => [
+  ...(data.projectCount !== undefined
+    ? [
+        {
+          title: "Total Projects",
+          value: data.projectCount,
+          difference: data.projectDifference,
+        },
+      ]
+    : []),
   {
     title: "Total Tasks",
     value: data.taskCount,

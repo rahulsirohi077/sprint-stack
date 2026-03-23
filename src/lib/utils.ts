@@ -24,3 +24,7 @@ export function generateInviteCode(length:number){
 export function formatTaskStatus(status: string) {
   return status.replaceAll("_", " ")
 }
+
+export const calculateDifference = (current: number, previous: number) => {
+    return current - previous;
+};
