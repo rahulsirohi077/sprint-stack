@@ -123,6 +123,15 @@ const app = new Hono()
                 queries: query
             });
 
+            if (tasks.rows.length === 0) {
+                return c.json({
+                    data: {
+                        ...tasks,
+                        rows: []
+                    }
+                });
+            }
+
             const projectIds = tasks.rows.map((task)=> task.projectId);
             const assigneeIds = tasks.rows.map((task)=> task.assigneeId);
 
@@ -148,7 +157,7 @@ const app = new Hono()
 
                     return {
                         ...member,
-                        name: user.name,
+                        name: user.name?.trim() || user.email,
                         email: user.email
                     }
                 })
@@ -340,7 +349,7 @@ const app = new Hono()
 
             const assignee = {
                 ...taskMember,
-                name: assigneeUser.name,
+                name: assigneeUser.name?.trim() || assigneeUser.email,
                 email: assigneeUser.email
             };
 

@@ -7,7 +7,6 @@ import { getMember } from "../utils";
 import { MemberRow } from "@/features/workspaces/types";
 import { DATABASE_ID, MEMBERS_ID } from "@/config";
 import { Query } from "node-appwrite";
-import { AwardIcon } from "lucide-react";
 import { MemberRole } from "../type";
 
 const app = new Hono()
@@ -43,7 +42,7 @@ const app = new Hono()
 
                     return {
                         ...member,
-                        name: user.name,
+                        name: user.name || user.email,
                         email: user.email,
                     };
                 }),
