@@ -21,7 +21,7 @@ export const useGetWorkspaces = () => {
 
     useEffect(() => {
         if (query.isError) {
-            toast.error("Failed to fetch current user");
+            toast.error("Failed to fetch Workspaces");
         }
     }, [query.isError]);
 
