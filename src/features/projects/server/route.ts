@@ -210,7 +210,30 @@ const app = new Hono()
                 return c.json({ error: "Unauthorized" }, 401);
             }
 
-            // TODO: Delete Tasks
+            while (true) {
+                const tasks = await databases.listRows<Task>({
+                    databaseId: DATABASE_ID,
+                    tableId: TASKS_ID,
+                    queries: [
+                        Query.equal("projectId", projectId),
+                        Query.limit(100)
+                    ]
+                });
+
+                if (tasks.rows.length === 0) {
+                    break;
+                }
+
+                await Promise.all(
+                    tasks.rows.map((task) =>
+                        databases.deleteRow({
+                            databaseId: DATABASE_ID,
+                            tableId: TASKS_ID,
+                            rowId: task.$id,
+                        })
+                    )
+                );
+            }
 
             await databases.deleteRow({
                 databaseId: DATABASE_ID,

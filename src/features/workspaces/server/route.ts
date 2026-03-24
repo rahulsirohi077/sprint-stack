@@ -209,7 +209,80 @@ const app = new Hono()
                 return c.json({error:"Unauthorized"},401);
             }
 
-            // TODO: Delete Members, Projects and Tasks
+            while (true) {
+                const tasks = await databases.listRows<Task>({
+                    databaseId: DATABASE_ID,
+                    tableId: TASKS_ID,
+                    queries: [
+                        Query.equal("workspaceId", workspaceId),
+                        Query.limit(100)
+                    ]
+                });
+
+                if (tasks.rows.length === 0) {
+                    break;
+                }
+
+                await Promise.all(
+                    tasks.rows.map((task) =>
+                        databases.deleteRow({
+                            databaseId: DATABASE_ID,
+                            tableId: TASKS_ID,
+                            rowId: task.$id,
+                        })
+                    )
+                );
+            }
+
+            while (true) {
+                const projects = await databases.listRows<ProjectsRow>({
+                    databaseId: DATABASE_ID,
+                    tableId: PROJECTS_ID,
+                    queries: [
+                        Query.equal("workspaceId", workspaceId),
+                        Query.limit(100)
+                    ]
+                });
+
+                if (projects.rows.length === 0) {
+                    break;
+                }
+
+                await Promise.all(
+                    projects.rows.map((project) =>
+                        databases.deleteRow({
+                            databaseId: DATABASE_ID,
+                            tableId: PROJECTS_ID,
+                            rowId: project.$id,
+                        })
+                    )
+                );
+            }
+
+            while (true) {
+                const members = await databases.listRows<MemberRow>({
+                    databaseId: DATABASE_ID,
+                    tableId: MEMBERS_ID,
+                    queries: [
+                        Query.equal("workspaceId", workspaceId),
+                        Query.limit(100)
+                    ]
+                });
+
+                if (members.rows.length === 0) {
+                    break;
+                }
+
+                await Promise.all(
+                    members.rows.map((workspaceMember) =>
+                        databases.deleteRow({
+                            databaseId: DATABASE_ID,
+                            tableId: MEMBERS_ID,
+                            rowId: workspaceMember.$id,
+                        })
+                    )
+                );
+            }
 
             await databases.deleteRow({
                 databaseId: DATABASE_ID,
