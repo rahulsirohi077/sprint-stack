@@ -2,6 +2,10 @@
 
 Sprint Stack is a full-stack project management application built with Next.js, React, Hono, and Appwrite. It supports authentication, multi-workspace collaboration, member roles, project organization, task tracking, analytics, and multiple task views including table, kanban, and calendar.
 
+## Live Demo
+
+- Deployed application: https://sprint-stack.vercel.app/
+
 ## Overview
 
 This project combines:
