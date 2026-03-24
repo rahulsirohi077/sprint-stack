@@ -25,7 +25,7 @@ export const useLogout = () => {
         onSuccess: () => {
             toast.success("Logged out successfully");
             router.refresh();
-            queryClient.clear(); 
+            queryClient.clear();
         },
         onError: () => {
             toast.error("Logout failed");
